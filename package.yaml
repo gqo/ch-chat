@@ -1,0 +1,98 @@
+name:                chat
+version:             0.1.0.0
+github:              "gqo/ch-chat"
+license:             BSD3
+author:              "Graeme Ferguson"
+maintainer:          "graeme.ferguson@nyu.edu"
+copyright:           "GPL Version 3"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Implementation of a simple CLI based chat client using Cloud Haskell
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/gqo/ch-chat>
+
+dependencies:
+- base >= 4.7 && < 5
+- network-transport-tcp
+- distributed-process
+- binary
+- containers
+- mtl
+- transformers
+
+library:
+  source-dirs: src
+
+executables:
+  client-exe:
+    main:                Main.hs
+    source-dirs:         client
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - network-transport-tcp
+    - distributed-process
+    - binary
+    - containers
+    - mtl
+    - transformers
+    - chat
+  
+  server-exe:
+    main:                Main.hs
+    source-dirs:         server
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - network-transport-tcp
+    - distributed-process
+    - binary
+    - containers
+    - mtl
+    - transformers
+    - chat
+
+tests:
+  client-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - network-transport-tcp
+    - distributed-process
+    - binary
+    - containers
+    - mtl
+    - transformers
+    - chat
+
+  server-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - network-transport-tcp
+    - distributed-process
+    - binary
+    - containers
+    - mtl
+    - transformers
+    - chat
