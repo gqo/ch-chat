@@ -27,6 +27,9 @@ main = do
             runProcess client $ do
                 say "Starting client..."
                 serverPID <- discoverServer $ addrToNodeId serverAddr
+                -- monitor serverPID
+                link serverPID
+
                 (sp, rp) <- newChan :: Process (SendPort ChatMessage, ReceivePort ChatMessage)
                 
                 say "Enter your username: "
@@ -34,6 +37,9 @@ main = do
                 send serverPID $ JoinMessage username sp
 
                 void $ spawnLocal $ forever $ do
+                    -- reason <- receiveWait [match serverFailHandler]
+                    -- case reason of
+                    --     Died -> die "Chat server failure detected. Shutting down client..."
                     msg <- receiveChan rp
                     say $ ppChat msg
                 forever $ do
@@ -59,3 +65,7 @@ discoverServer serverID = do
                 Just serverPID -> return serverPID
                 Nothing -> discoverServer serverID
         Nothing -> discoverServer serverID
+
+-- serverFailHandler :: ProcessMonitorNotification -> Process DiedReason
+-- serverFailHandler (ProcessMonitorNotification _ _ r) =
+--     return r
