@@ -27,6 +27,8 @@ dependencies:
 - containers
 - mtl
 - transformers
+- bytestring
+- network-transport
 
 library:
   source-dirs: src
@@ -46,6 +48,8 @@ executables:
     - containers
     - mtl
     - transformers
+    - bytestring
+    - network-transport
     - chat
   
   server-exe:
@@ -79,6 +83,8 @@ tests:
     - containers
     - mtl
     - transformers
+    - bytestring
+    - network-transport
     - chat
 
   server-test:

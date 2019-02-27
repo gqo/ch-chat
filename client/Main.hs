@@ -1,28 +1,61 @@
 module Main where
 
-import Control.Concurrent (threadDelay)
-import Control.Monad (forever)
 import Control.Distributed.Process
-import Control.Distributed.Process.Node
+import Control.Distributed.Process.Node ( initRemoteTable
+                                        , runProcess
+                                        , newLocalNode
+                                        )
+import Network.Transport (EndPointAddress(EndPointAddress))
 import Network.Transport.TCP (createTransport, defaultTCPParameters)
+import Control.Concurrent (threadDelay)
+
+import Control.Monad (forever, void)
+
+import Data.ByteString.Char8 (pack)
+import System.Environment (getArgs)
+
+import Messages
 
 main :: IO ()
 main = do
-    -- Boilerplate code until client is written
-    Right t <- createTransport "127.0.0.1" "10501" defaultTCPParameters
-    node <- newLocalNode t initRemoteTable
-    runProcess node $ do
-        echoPid <- spawnLocal $ forever $ do
-            receiveWait [match logMessage, match replyBack]
+    [host, port, serverAddrArg] <- getArgs
+    let serverAddr = serverAddrArg ++ ":0"
+    maybeT <- createTransport host port defaultTCPParameters
+    case maybeT of
+        Right t -> do
+            client <- newLocalNode t initRemoteTable
+            runProcess client $ do
+                say "Starting client..."
+                serverPID <- discoverServer $ addrToNodeId serverAddr
+                (sp, rp) <- newChan :: Process (SendPort ChatMessage, ReceivePort ChatMessage)
+                
+                say "Enter your username: "
+                username <- liftIO getLine
+                send serverPID $ JoinMessage username sp
 
-        say "send some messages!"
-        send echoPid "client"
-        self <- getSelfPid
-        send echoPid (self, "client")
+                void $ spawnLocal $ forever $ do
+                    msg <- receiveChan rp
+                    say $ ppChat msg
+                forever $ do
+                    msg <- liftIO getLine
+                    send serverPID $ ChatMessage username msg
+                    liftIO $ threadDelay 1000000
+        Left error -> print error
 
-        m <- expectTimeout 1000000
-        case m of
-            Nothing -> die "nothing came back!"
-            Just s -> say $ "got " ++ s ++ " back!"
-        
-        liftIO $ threadDelay 2000000
+ppChat :: ChatMessage -> String
+ppChat (ChatMessage username msg) =
+    username ++ ": " ++ msg
+
+addrToNodeId :: String -> NodeId
+addrToNodeId addr = NodeId $ EndPointAddress (pack addr)
+
+discoverServer :: NodeId -> Process ProcessId
+discoverServer serverID = do
+    whereisRemoteAsync serverID "serverPID"
+    reply <- expectTimeout 100 :: Process (Maybe WhereIsReply)
+    case reply of
+        Just (WhereIsReply _ maybeServerPID) ->
+            case maybeServerPID of
+                Just serverPID -> return serverPID
+                Nothing -> discoverServer serverID
+        Nothing -> discoverServer serverID
